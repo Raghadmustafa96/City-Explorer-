@@ -37,10 +37,10 @@ server.get('/location',(req,res)=>{
   const locData = require('./data/location.json');
   console.log(locData);
   console.log(locData[0]);
-  // res.send(locData);
-  const locObj = new Location(locData);
-  console.log(locObj);
-  res.send(locObj);
+  res.send(locData);
+  //   const locObj = new Location(locData);
+  //   console.log(locObj);
+  //   res.send(locObj);
 
 });
 
@@ -53,43 +53,26 @@ function Location (geoData) {
 }
 
 
-// server.get('/weather',(req,res)=>{
-//   const weatherData = require('./data/weather.json');
-//   console.log(weatherData);
-//   console.log(weatherData[0]);
-//   // res.send(locData);
-//   const locObj = new Location(weatherData);
-//   console.log(locObj);
-//   res.send(locObj);
+server.get('/weather',(req,res)=>{
+  const weatherData = require('./data/weather.json');
+  console.log(weatherData);
 
-// });
-
-
-
-
+  const weatherConst = [];
+  weatherData.data.forEach(element=>{
+    const locObj = new Weather(element);
+    console.log(weatherData);
+    weatherConst.push(locObj);
+  });
+  // res.send(weatherData);
+  res.send(weatherConst);
 
 
+});
 
-
-// function Weather (WeatherData) {
-
-
-
-
-
-
-//   // {
-//   //     "forecast": "Partly cloudy until afternoon.",
-//   //     "time": "Mon Jan 01 2001"
-//   //   },
-
-
-
-// }
-
-
-
-
+function Weather (WeatherData) {
+  this.forecast = WeatherData.weather.description ;
+  this.time = WeatherData.datetime;
+}
 
 // localhost:3000/ssss
 server.use('*',(req,res)=>{
