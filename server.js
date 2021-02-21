@@ -6,67 +6,46 @@ require('dotenv').config();
 //CORS: Cross Origin Resource Sharing
 const cors = require('cors');
 
-
 const server = express();
-server.use(cors()); // make it opened
+server.use(cors());
 
 const PORT = process.env.PORT || 3030;
-// 3000
-// 3030
+// 3000 localhost port
+// 3030 if .env file have some problem
 // Heroku port
 
-
-//test my server
-// request: carries all the parameters in the header
-// response: data to send
-
-
-// handle any route
-server.get('/',(req,res)=>{
-  res.send('home route');
+server.listen(PORT, ()=>{
+  console.log(`Listening on PORT ${PORT}`);
 });
 
-//request: localhost:3000/test
-server.get('/test',(req,res)=>{
-  res.send('your server is working fine!!');
+// when try to handle any route localhost:3000/ server will respond with 'go to home'
+server.get('/',(request,response)=>{
+  response.send('go to home');
 });
 
-// location route
-// localhost:3000/location
-server.get('/location',(req,res)=>{
-  const locData = require('./data/location.json');
-  console.log(locData);
-  console.log(locData[0]);
-  res.send(locData);
-  //   const locObj = new Location(locData);
-  //   console.log(locObj);
-  //   res.send(locObj);
-
+// when try to request or route /location [localhost:3000/location] server will respond with the data from location.json file
+server.get('/location',(request,response)=>{
+  const locationData = require('./data/location.json');
+  const locationObj = new Location(locationData);
+  response.send(locationObj);
 });
 
-
-function Location (geoData) {
+function Location (locationData) {
   this.search_query = 'Lynnwood';
-  this.formatted_query= geoData[0].display_name;
-  this.latitude = geoData[0].lat;
-  this.longitude = geoData[0].lon;
+  this.formatted_query= locationData[0].display_name;
+  this.latitude = locationData[0].lat;
+  this.longitude = locationData[0].lon;
 }
 
-
-server.get('/weather',(req,res)=>{
-  const weatherData = require('./data/weather.json');
-  console.log(weatherData);
-
-  const weatherConst = [];
-  weatherData.data.forEach(element=>{
-    const locObj = new Weather(element);
-    console.log(weatherData);
-    weatherConst.push(locObj);
+// when try to request or route /weather [localhost:3000/weather] server will respond with the data from weather.json file
+server.get('/weather',(request,response)=>{
+  const allDataWeather = require('./data/weather.json');
+  const weatherData = [];
+  allDataWeather.data.forEach(element => {
+    const weatherObject = new Weather(element);
+    weatherData.push(weatherObject);
   });
-  // res.send(weatherData);
-  res.send(weatherConst);
-
-
+  response.send(weatherData);
 });
 
 function Weather (WeatherData) {
@@ -74,11 +53,7 @@ function Weather (WeatherData) {
   this.time = WeatherData.datetime;
 }
 
-// localhost:3000/ssss
+// when try to request or route something not related to server [localhost:3000/dfghhj] server will respond  with this message
 server.use('*',(req,res)=>{
-  res.status(404).send('route not found');
-});
-
-server.listen(PORT, ()=>{
-  console.log(`Listening on PORT ${PORT}`);
+  res.status(404).send('Error message // The Route not found');
 });
