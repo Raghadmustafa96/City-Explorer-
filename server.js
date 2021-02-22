@@ -88,7 +88,11 @@ function handlePark(request,response){
   const latitude = request.query.latitude;
   const longitude = request.query.longitude;
 
+  // const parkCode = request.query.parkCode;
+
   //https://developer.nps.gov/api/v1/parks?parkCode=acad&api_key=lUQX63yCYlb0s2d3kx5hAwScVfNNM4E4ZLNOYbYX
+
+  // let url = `https://developer.nps.gov/api/v1/parks?parkCode=${parkCode}&api_key=${parkKey}`;
   let url = `https://developer.nps.gov/api/v1/parks?latitude=${latitude}&longitude=${longitude}&api_key=${parkKey}`;
 
   superAgent0.get(url).then(parkData =>{
