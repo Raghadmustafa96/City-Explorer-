@@ -3,16 +3,15 @@ const express = require ('express');
 require('dotenv').config();
 
 const cors = require('cors');
+const pg =require('pg');
+
 
 const server = express();
 server.use(cors());
 
 const superAgent0 =require('superagent');
-
 const PORT = process.env.PORT || 3030;
-server.listen(PORT, ()=>{
-  console.log(`Listening on PORT ${PORT}`);
-});
+const client = new pg.Client({ connectionString: process.env.DATABASE_URL,   ssl: { rejectUnauthorized: false } });
 
 
 // Route definition
@@ -20,16 +19,19 @@ server.get('/', handleHomeRoute);
 server.get('/location', handleLocation);
 server.get('/weather', handleWeather );
 server.get('/parks', handlePark );
+
 server.use('*', notFoundRoute );
 server.use(errorHandler);
+
 
 // constructor
 function Location (city , locationData) {
   this.search_query = city;
-  this.formatted_query= locationData[0].display_name;
-  this.latitude = locationData[0].lat;
-  this.longitude = locationData[0].lon;
+  this.formatted_query= locationData.display_name;
+  this.latitude = locationData.lat;
+  this.longitude = locationData.lon;
 }
+
 
 function Weather (WeatherData) {
   this.forecast = WeatherData.weather.description ;
@@ -52,16 +54,44 @@ function handleHomeRoute (request,response){
 function handleLocation(request,response){
   const NameOfCity = request.query.city;
 
-  let key = process.env.LocationKey;
-  let url = `https://eu1.locationiq.com/v1/search.php?key=${key}&q=${NameOfCity}&format=json`;
+  let SQL = 'SELECT search_query FROM locations;';
+  let sqlV = [];
+  let allCity = [];
 
-  //  https://eu1.locationiq.com/v1/search.php?key=pk.d816793a6f38fc1788a2af60737cb9e7&q=amman&format=json
+  client.query(SQL).then(results => {
+    console.log(results.rows);
+    sqlV = results.rows;
+    allCity = sqlV.map(element => {
+      return element.search_query;
+    });
 
-  superAgent0.get(url).then(locationData =>{
-    const locationObj = new Location (NameOfCity , locationData.body );
-    response.send(locationObj);
-  }).catch(()=>{
-    errorHandler('error in getting data from Api server ',request,response);
+    if (!allCity.includes(NameOfCity)) {
+      let key = process.env.LocationKey;
+      let url = `https://eu1.locationiq.com/v1/search.php?key=${key}&q=${NameOfCity}&format=json`;
+
+      superAgent0.get(url).then(data => {
+        const location = new Location(NameOfCity, data.body[0]);
+        let SQL = 'INSERT INTO locations VALUES ($1,$2,$3,$4) RETURNING *;';
+        let safeValues = [location.search_query, location.formatted_query, location.latitude, location.longitude];
+
+        client.query(SQL, safeValues)
+          .then((result) => {
+            response.send(result.rows);
+          });
+
+        console.log('from API');
+        response.send(location);
+      }).catch(()=>{
+        errorHandler('error in getting data from Api server ',request,response);
+      });
+    } else {
+      let SQL = `SELECT * FROM locations WHERE search_query = '${NameOfCity}';`;
+      client.query(SQL)
+        .then(result=>{
+          console.log('from dataBase');
+          response.send(result.rows[0]);
+        });
+    }
   });
 }
 
@@ -114,3 +144,12 @@ function notFoundRoute(req,res){
 function errorHandler(error,req,res){
   res.status(500).send(error);
 }
+
+
+client.connect().then(()=>{
+  server.listen(PORT, ()=>{
+    console.log(`Listening on PORT ${PORT}`);
+
+  });
+
+});
