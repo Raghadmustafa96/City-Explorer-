@@ -11,7 +11,9 @@ server.use(cors());
 
 const superAgent0 =require('superagent');
 const PORT = process.env.PORT || 3030;
-const client = new pg.Client({ connectionString: process.env.DATABASE_URL,   ssl: { rejectUnauthorized: false } });
+const client = new pg.Client(process.env.DATABASE_URL);
+
+// const client = new pg.Client({ connectionString: process.env.DATABASE_URL,   ssl: { rejectUnauthorized: false } });
 
 
 // Route definition
@@ -115,15 +117,14 @@ function handleWeather(request,response){
 
 function handlePark(request,response){
   let parkKey = process.env.parkKey;
-  const latitude = request.query.latitude;
-  const longitude = request.query.longitude;
+  const cityName = request.query.search_query;
 
   // const parkCode = request.query.parkCode;
 
   //https://developer.nps.gov/api/v1/parks?parkCode=acad&api_key=lUQX63yCYlb0s2d3kx5hAwScVfNNM4E4ZLNOYbYX
 
   // let url = `https://developer.nps.gov/api/v1/parks?parkCode=${parkCode}&api_key=${parkKey}`;
-  let url = `https://developer.nps.gov/api/v1/parks?latitude=${latitude}&longitude=${longitude}&api_key=${parkKey}`;
+  let url = `https://developer.nps.gov/api/v1/parks?q=${cityName}&api_key=${parkKey}`;
 
   superAgent0.get(url).then(parkData =>{
     // console.log(parkData);
