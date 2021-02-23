@@ -11,9 +11,9 @@ server.use(cors());
 
 const superAgent0 =require('superagent');
 const PORT = process.env.PORT || 3030;
-const client = new pg.Client(process.env.DATABASE_URL);
+// const client = new pg.Client(process.env.DATABASE_URL);
 
-// const client = new pg.Client({ connectionString: process.env.DATABASE_URL,   ssl: { rejectUnauthorized: false } });
+const client = new pg.Client({ connectionString: process.env.DATABASE_URL,   ssl: { rejectUnauthorized: false } });
 
 
 // Route definition
