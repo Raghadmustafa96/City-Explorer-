@@ -9,19 +9,24 @@ const pg =require('pg');
 const server = express();
 server.use(cors());
 
-const superAgent0 =require('superagent');
+var superAgent0 =require('superagent');
+
+let client = '';
 const PORT = process.env.PORT || 3030;
-// const client = new pg.Client(process.env.DATABASE_URL);
 
-const client = new pg.Client({ connectionString: process.env.DATABASE_URL,   ssl: { rejectUnauthorized: false } });
+if(PORT==3000 || PORT==3030){
+  client = new pg.Client(process.env.DATABASE_URL);
+} else {
+  client = new pg.Client({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+}
 
-
-// Route definition
+// Routes
 server.get('/', handleHomeRoute);
 server.get('/location', handleLocation);
 server.get('/weather', handleWeather );
 server.get('/parks', handlePark );
-
+server.get('/yelp', handleYelp );
+server.get('/movies', handleMovie );
 server.use('*', notFoundRoute );
 server.use(errorHandler);
 
@@ -33,7 +38,6 @@ function Location (city , locationData) {
   this.latitude = locationData.lat;
   this.longitude = locationData.lon;
 }
-
 
 function Weather (WeatherData) {
   this.forecast = WeatherData.weather.description ;
@@ -48,6 +52,25 @@ function Park (parkData) {
   this.url = parkData.url;
 }
 
+function Yelp (yelpData){
+  this.name = yelpData.name;
+  this.image_url = yelpData.image_url;
+  this.price = yelpData.price;
+  this.rating = yelpData.rating;
+  this.url = yelpData.url;
+}
+
+function Movie (movieData){
+  this.title = movieData.title;
+  this.overview = movieData.overview;
+  this.average_votes = movieData;
+  this.total_votes = movieData.vote_count;
+  this.image_url =`https://image.tmdb.org/t/p/w500${movieData.poster_path}`;
+  this.popularity = movieData.popularity;
+  this.released_on = movieData.popularity;
+}
+
+
 // function
 function handleHomeRoute (request,response){
   response.send('go to home');
@@ -61,7 +84,6 @@ function handleLocation(request,response){
   let allCity = [];
 
   client.query(SQL).then(results => {
-    console.log(results.rows);
     sqlV = results.rows;
     allCity = sqlV.map(element => {
       return element.search_query;
@@ -101,7 +123,6 @@ function handleWeather(request,response){
   let weatherKey = process.env.weatherKey;
   const cityName = request.query.search_query;
 
-  // https://api.weatherbit.io/v2.0/forecast/daily?city=amman&key=01e6b09a24b640dd9610c10e0045bb58
   let url = `https://api.weatherbit.io/v2.0/forecast/daily?city=${cityName}&key=${weatherKey}`;
 
   superAgent0.get(url).then(weatherData =>{
@@ -118,16 +139,9 @@ function handleWeather(request,response){
 function handlePark(request,response){
   let parkKey = process.env.parkKey;
   const cityName = request.query.search_query;
-
-  // const parkCode = request.query.parkCode;
-
-  //https://developer.nps.gov/api/v1/parks?parkCode=acad&api_key=lUQX63yCYlb0s2d3kx5hAwScVfNNM4E4ZLNOYbYX
-
-  // let url = `https://developer.nps.gov/api/v1/parks?parkCode=${parkCode}&api_key=${parkKey}`;
   let url = `https://developer.nps.gov/api/v1/parks?q=${cityName}&api_key=${parkKey}`;
 
   superAgent0.get(url).then(parkData =>{
-    // console.log(parkData);
     let parkData0 = parkData.body.data.map(element => {
       const parkObject = new Park(element);
       return parkObject;
@@ -135,6 +149,49 @@ function handlePark(request,response){
     response.send(parkData0);
   }).catch(()=>{
     errorHandler('error in getting data from Api server ',request,response);
+  });
+}
+
+function handleYelp(request,response){
+  const cityName = request.query.search_query;
+  const page = request.query.page;
+  let yelp_key = process.env.yelpKey ;
+  const numberPerPage = 5;
+  const startIndex = ((page -1) * numberPerPage +1);
+
+  let url = `https://api.yelp.com/v3/businesses/search?location=${cityName}&limit=${numberPerPage}&offset=${startIndex}`;
+
+  let yelps = [];
+  superAgent0.get(url).set('Authorization', `Bearer ${yelp_key}`)
+    .then(yelpData =>{
+
+      yelps = yelpData.body.businesses.map(element => {
+        const yelpObject = new Yelp(element);
+        return yelpObject;
+      });
+      response.send(yelps);
+    });
+}
+
+//https://api.themoviedb.org/3/search/movie?api_key=<<api_key>>&query=whiplash&language=de-DE&region=
+
+function handleMovie(request,response){
+  const cityName = request.query.search_query;
+  let movie_key = process.env.movieKey;
+
+  let url = `https://api.themoviedb.org/3/search/movie?api_key=${movie_key}&query=${cityName}&language=de-DE&region=DE`;
+  console.log(url);
+  let movies = [];
+
+  superAgent0.get(url).then(movieData =>{
+    movies = movieData.body.results.map(element => {
+
+      console.log('fffffffff' , movieData);
+      console.log(element);
+      const movieObject = new Movie(element);
+      return movieObject;
+    });
+    response.send(movies);
   });
 }
 
@@ -146,7 +203,6 @@ function errorHandler(error,req,res){
   res.status(500).send(error);
 }
 
-
 client.connect().then(()=>{
   server.listen(PORT, ()=>{
     console.log(`Listening on PORT ${PORT}`);
@@ -154,3 +210,6 @@ client.connect().then(()=>{
   });
 
 });
+
+
+// Finally the End   ^_^  >_<
