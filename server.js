@@ -14,11 +14,11 @@ var superAgent0 =require('superagent');
 let client = '';
 const PORT = process.env.PORT || 3030;
 
-// if(PORT==3000 || PORT==3030){
-//   client = new pg.Client(process.env.DATABASE_URL);
-// } else {
+if(PORT == 3000 || PORT == 3030){
+  client = new pg.Client(process.env.DATABASE_URL);
+} else {
   client = new pg.Client({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
-// }
+}
 
 // Routes
 server.get('/', handleHomeRoute);
@@ -180,14 +180,10 @@ function handleMovie(request,response){
   let movie_key = process.env.movieKey;
 
   let url = `https://api.themoviedb.org/3/search/movie?api_key=${movie_key}&query=${cityName}&language=de-DE&region=DE`;
-  console.log(url);
   let movies = [];
 
   superAgent0.get(url).then(movieData =>{
     movies = movieData.body.results.map(element => {
-
-      console.log('fffffffff' , movieData);
-      console.log(element);
       const movieObject = new Movie(element);
       return movieObject;
     });
