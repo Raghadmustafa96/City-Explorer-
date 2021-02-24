@@ -14,11 +14,11 @@ var superAgent0 =require('superagent');
 let client = '';
 const PORT = process.env.PORT || 3030;
 
-if(PORT==3000 || PORT==3030){
-  client = new pg.Client(process.env.DATABASE_URL);
-} else {
+// if(PORT==3000 || PORT==3030){
+//   client = new pg.Client(process.env.DATABASE_URL);
+// } else {
   client = new pg.Client({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
-}
+// }
 
 // Routes
 server.get('/', handleHomeRoute);
